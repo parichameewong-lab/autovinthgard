@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoVINth | การ์ดรับประกันการตรวจสภาพรถ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Montserrat:ital,wght@0,700;0,800;0,900;1,800;1,900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --navy: #0b1120;
+      --blue: #073b91;
+      --orange: #ea580c;
+      --light: #f4f7fb;
+      --green: #20a442;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: #eaf0f7;
+      color: var(--navy);
+      font-family: Prompt, sans-serif
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px
+    }
+
+    .preview-area {
+      padding: 34px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      overflow: auto
+    }
+
+    /* The card is always laid out at a fixed design width (760px) so it looks
+       identical on every device and in the downloaded image. On narrow
+       screens, .card-fit scales it down visually via JS (fitCard). */
+    .card-fit {
+      position: relative;
+      width: 760px;
+      max-width: 100%
+    }
+
+    .card-shell {
+      width: 760px;
+      transform-origin: top left;
+      filter: drop-shadow(0 14px 25px rgba(11, 17, 32, .18))
+    }
+
+    .card {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid var(--orange);
+      border-radius: 34px;
+      display: flex;
+      flex-direction: column
+    }
+
+    .card:before {
+      content: "";
+      position: absolute;
+      inset: 34% -15% 13%;
+      background: linear-gradient(145deg, transparent 38%, #edf5fe 38% 45%, transparent 45% 54%, #f3f8fe 54%);
+      z-index: 0
+    }
+
+    .card>* {
+      position: relative;
+      z-index: 1
+    }
+
+    .heading {
+      text-align: center;
+      padding: 28px 30px 12px
+    }
+
+    .brand {
+      font: 900 48px/1 Montserrat, sans-serif;
+      letter-spacing: -4px;
+      color: #093d91;
+      font-style: italic
+    }
+
+    .brand span {
+      color: var(--orange)
+    }
+
+    .tagline {
+      font: 700 11px/1.7 Montserrat, sans-serif;
+      letter-spacing: 2px;
+      color: #0c2865;
+      margin-top: 5px
+    }
+
+    .title {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin: 12px 0 2px
+    }
+
+    .subtitle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--orange);
+      font-size: 19px;
+      font-weight: 600
+    }
+
+    .subtitle:before,
+    .subtitle:after {
+      content: "";
+      height: 2px;
+      width: 90px;
+      background: var(--orange)
+    }
+
+    .cert-wrap {
+      margin: 10px 48px 26px;
+      padding-left: 0;
+      position: relative
+    }
+
+    .shield {
+      display: none
+    }
+
+    .cert {
+      position: relative;
+      height: 150px;
+      margin: 0;
+      padding: 25px 78px 16px;
+      color: #fff;
+      text-align: center;
+      background: linear-gradient(115deg, #125fc3 0%, #073e91 48%, #061f59 100%);
+      clip-path: polygon(0 0, 100% 0, 94% 100%, 0 100%);
+      border-radius: 22px 24px 24px 22px;
+      box-shadow: 0 8px 15px #0b112038
+    }
+
+    .cert:before {
+      content: "";
+      position: absolute;
+      top: 21px;
+      bottom: 21px;
+      left: 25px;
+      width: 6px;
+      border-radius: 99px;
+      background: linear-gradient(#ffb12b, #ea580c)
+    }
+
+    .cert b {
+      display: block;
+      font: 900 italic 63px/.9 Montserrat, sans-serif;
+      letter-spacing: -3px;
+      text-shadow: 2px 3px 2px #061b4b
+    }
+
+    .cert small {
+      display: block;
+      margin-top: 10px;
+      font: 800 italic 27px/1 Montserrat, sans-serif;
+      color: #ff9c1e;
+      letter-spacing: -.7px
+    }
+
+    .ribbon {
+      position: relative;
+      z-index: 2;
+      margin-left: 0;
+      top: -15px;
+      width: 92%;
+      padding: 9px 20px 10px;
+      background: linear-gradient(100deg, #ffa51f, #ea580c);
+      color: #fff;
+      text-align: center;
+      font-weight: 600;
+      font-size: 22px;
+      line-height: 1.1;
+      border-radius: 0 0 18px 18px;
+      clip-path: polygon(0 0, 100% 0, 94% 100%, 0 100%);
+      box-shadow: 0 4px 7px #0b112022
+    }
+
+    .middle {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 14px;
+      padding: 0 28px
+    }
+
+    .features-column {
+      display: flex;
+      min-width: 0;
+      flex-direction: column
+    }
+
+    .features {
+      padding-top: 2px
+    }
+
+    .feature {
+      display: flex;
+      gap: 9px;
+      padding: 8px 0;
+      border-bottom: 1px solid #e9edf3;
+      align-items: center
+    }
+
+    .feature:last-child {
+      border: 0
+    }
+
+    .feature-icon {
+      flex: 0 0 44px;
+      height: 44px;
+      border: 1.5px solid var(--orange);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 21px;
+      color: #0c3a86;
+      background: white
+    }
+
+    .feature strong {
+      display: block;
+      color: #0b347e;
+      font-size: 16px;
+      line-height: 1.1
+    }
+
+    .feature span {
+      display: block;
+      font-size: 12px;
+      color: #394354;
+      margin-top: 2px
+    }
+
+    .qr-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px
+    }
+
+    .qr-box {
+      padding: 13px 16px 12px;
+      background: #fff;
+      border: 1px solid #dce3ec;
+      border-radius: 17px;
+      box-shadow: 0 5px 12px #0b112022;
+      text-align: center
+    }
+
+    .qr-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: #0b347e;
+      margin-bottom: 7px
+    }
+
+    .qr-code {
+      width: min(66%, 220px);
+      height: auto;
+      aspect-ratio: 1 / 1;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center
+    }
+
+    .qr-code[hidden] {
+      display: none !important
+    }
+
+    .qr-code img,
+    .qr-code canvas {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block
+    }
+
+    .vehicle-details {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      margin-top: 9px;
+      border-radius: 10px;
+      background: linear-gradient(100deg, #073987, #0c4aaa);
+      color: #fff;
+      padding: 8px 11px;
+      text-align: left;
+      box-shadow: 0 4px 8px #0b112020
+    }
+
+    .vehicle-details i {
+      font-size: 20px;
+      color: #ffae31
+    }
+
+    .vehicle-details small {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1.1
+    }
+
+    .vehicle-details output {
+      display: block;
+      margin-top: 2px;
+      font: 700 15px/1.15 Montserrat, sans-serif;
+      white-space: nowrap
+    }
+
+    .plate {
+      width: 100%;
+      min-height: 86px;
+      padding: 8px 18px 9px;
+      border: 5px solid #0b347e;
+      border-radius: 11px;
+      background: #fff;
+      color: #0b347e;
+      box-shadow: 0 5px 10px #0b112025;
+      text-align: center
+    }
+
+    .plate small {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.8px
+    }
+
+    .plate output {
+      display: block;
+      margin-top: 3px;
+      font: 800 26px/1.15 Prompt, sans-serif;
+      letter-spacing: .2px;
+      white-space: nowrap
+    }
+
+    .slogan {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-height: 86px;
+      margin-top: auto;
+      padding: 8px 0 0;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      line-height: 1.2;
+      font-weight: 600;
+      font-size: 17px;
+      color: #0b347e
+    }
+
+    .slogan span {
+      display: block;
+      white-space: nowrap
+    }
+
+    .slogan strong {
+      display: block;
+      color: var(--orange);
+      font-size: 22px;
+      font-weight: 700;
+      white-space: nowrap
+    }
+
+    .slogan i {
+      font-size: 22px;
+      margin-left: 6px
+    }
+
+    .lower {
+      min-height: 0;
+      margin-top: auto;
+      padding: 0
+    }
+
+    .info {
+      margin: 0 18px 8px;
+      display: grid;
+      grid-template-columns: 1fr 1.45fr 1.1fr;
+      background: #f7f8fa;
+      border: 1px solid #c9d2df;
+      border-radius: 14px;
+      padding: 8px
+    }
+
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border-right: 1px solid #cbd2dc;
+      min-width: 0
+    }
+
+    .info-item:last-child {
+      border: 0
+    }
+
+    .info i {
+      font-size: 24px;
+      color: #0b3b8e
+    }
+
+    .info label {
+      display: block;
+      font-size: 10px;
+      color: #0b347e;
+      font-weight: 600;
+      white-space: nowrap
+    }
+
+    .info output {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0b347e;
+      white-space: nowrap
+    }
+
+    .info output.seller {
+      font-size: 12px;
+      line-height: 1.25;
+      white-space: normal
+    }
+
+    .info .pass {
+      color: var(--green);
+      font-size: 21px
+    }
+
+    .footer {
+      margin: 0 18px 12px;
+      border-radius: 0 0 12px 12px;
+      background: linear-gradient(90deg, #062765, #073d9a);
+      color: #fff;
+      padding: 8px 20px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500
+    }
+
+    .footer b {
+      font: 900 italic 23px/1 Montserrat, sans-serif;
+      color: #ff8416;
+      letter-spacing: -2px;
+      margin-right: 18px
+    }
+
+    .panel {
+      background: #fff;
+      padding: 27px 24px;
+      border-left: 1px solid #d8e0ea;
+      overflow-y: auto
+    }
+
+    .panel h1 {
+      font-size: 21px;
+      margin: 0 0 4px
+    }
+
+    .panel>p {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0 0 22px
+    }
+
+    .field {
+      margin: 0 0 14px
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 6px
+    }
+
+    .field input {
+      font: inherit;
+      font-size: 13px;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d2d9e3;
+      border-radius: 8px;
+      outline-color: var(--orange)
+    }
+
+    .divider {
+      border: 0;
+      border-top: 1px solid #e6eaf0;
+      margin: 20px 0
+    }
+
+    .button {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 9px;
+      color: #fff;
+      font: 600 14px Prompt, sans-serif;
+      cursor: pointer;
+      background: var(--navy)
+    }
+
+    .button:hover {
+      filter: brightness(1.15)
+    }
+
+    .button.orange {
+      background: var(--orange)
+    }
+
+    .note {
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.6;
+      margin-top: 15px
+    }
+
+    @media(max-width:900px) {
+      .app {
+        grid-template-columns: 1fr
+      }
+
+      .panel {
+        border-left: 0;
+        border-top: 1px solid #d8e0ea
+      }
+
+      .preview-area {
+        padding: 18px
+      }
+    }
+
+    @media(max-width:520px) {
+      .preview-area {
+        padding: 10px
+      }
+    }
+
+    @media print {
+      @page {
+        size: 3in 4in;
+        margin: 0
+      }
+
+      body {
+        background: #fff
+      }
+
+      .app {
+        display: block
+      }
+
+      .preview-area {
+        padding: 0
+      }
+
+      .card-fit {
+        width: 100% !important;
+        height: auto !important
+      }
+
+      .card-shell {
+        width: 100%;
+        transform: none !important;
+        filter: none
+      }
+
+      .panel {
+        display: none
+      }
+
+      .card {
+        border-radius: 0;
+        border: 0;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 3 / 4
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <section class="preview-area" id="previewArea">
+      <div class="card-fit" id="cardFit">
+        <div class="card-shell" id="cardShell">
+          <article id="guaranteeCard" class="card">
+            <header class="heading">
+              <div class="brand">Auto<span>VIN</span>th</div>
+              <div class="tagline">INSPECT &nbsp;•&nbsp; TRUST &nbsp;•&nbsp; DRIVE CONFIDENTLY</div>
+              <div class="title">การันตีการตรวจสภาพรถ</div>
+              <div class="subtitle">โดยผู้เชี่ยวชาญ AutoVINth</div>
+            </header>
+            <section class="cert-wrap">
+              <div class="cert"><b>CERTIFIED</b><small>INSPECTED VEHICLE</small></div>
+              <div class="ribbon">มั่นใจ โปร่งใส ตรวจสอบได้ autovinth.com</div>
+            </section>
+            <section class="middle">
+              <div class="features-column">
+                <div class="features">
+                  <div class="feature">
+                    <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div><strong>ตรวจสภาพกว่า 200 จุด</strong><span>ครอบคลุมทุกระบบสำคัญ</span></div>
+                  </div>
+                  <div class="feature">
+                    <div class="feature-icon"><i class="fa-solid fa-camera"></i></div>
+                    <div><strong>มีภาพถ่ายประกอบ</strong><span>ตรวจสอบได้ทุกจุด</span></div>
+                  </div>
+                  <div class="feature">
+                    <div class="feature-icon"><i class="fa-regular fa-file-lines"></i></div>
+                    <div><strong>รายงานละเอียด</strong><span>ชัดเจน โปร่งใส ตรวจสอบได้</span></div>
+                  </div>
+                  <div class="feature">
+                    <div class="feature-icon"><i class="fa-solid fa-user-gear"></i></div>
+                    <div><strong>โดยช่างผู้เชี่ยวชาญ</strong><span>ประสบการณ์สูง</span></div>
+                  </div>
+                  <div class="feature">
+                    <div class="feature-icon"><i class="fa-solid fa-award"></i></div>
+                    <div><strong>มาตรฐานระดับสากล</strong><span>เชื่อถือได้ 100%</span></div>
+                  </div>
+                </div>
+                <div class="slogan"><span>ซื้อรถคันนี้ มั่นใจได้</span><strong>เมื่อมีรายงานตรวจสภาพนี้ <i
+                      class="fa-solid fa-check"></i></strong></div>
+              </div>
+              <div class="qr-column">
+                <div class="qr-box">
+                  <div class="qr-label">สแกนเพื่อดูรายงานการตรวจสภาพ</div>
+                  <div id="qrCode" class="qr-code"></div>
+                  <div id="uploadedQr" class="qr-code" hidden></div>
+                  <div class="vehicle-details"><i class="fa-solid fa-car-side"></i>
+                    <div><small>ปีผลิต / รุ่นรถ</small><output id="vehicleText">2021 Toyota Yaris ATIV</output></div>
+                  </div>
+                </div>
+                <div class="plate" aria-label="ป้ายทะเบียนรถ"><small>ทะเบียนรถ</small><output id="plateText">กข1234
+                    เชียงใหม่</output></div>
+              </div>
+            </section>
+            <section class="lower" aria-hidden="true"></section>
+            <section class="info">
+              <div class="info-item"><i class="fa-regular fa-calendar-days"></i>
+                <div><label>วันที่ตรวจสภาพ</label><output id="dateText">16 สิงหาคม 2568</output></div>
+              </div>
+              <div class="info-item"><i class="fa-solid fa-user-tag"></i>
+                <div><label>ผู้ขายและเบอร์โทร</label><output id="sellerText" class="seller">ชื่อผู้ขาย
+                    08x-xxx-xxxx</output></div>
+              </div>
+              <div class="info-item"><i class="fa-solid fa-circle-check" style="color:#20a442"></i>
+                <div><label>รถคันนี้ผ่านการตรวจแล้ว</label><output class="pass">ผ่าน</output></div>
+              </div>
+            </section>
+            <footer class="footer"><b>Autovinth.com</b>แพลตฟอร์มตรวจสภาพรถมือสองมาตรฐานสากลของไทย</footer>
+          </article>
+        </div>
+      </div>
+    </section>
+    <aside class="panel">
+      <h1><i class="fa-solid fa-sliders"></i> ป้อนข้อมูลการ์ด</h1>
+      <p>ระบบสร้างใบรับรองการตรวจสภาพ By autovinth.com</p>
+      <div class="field"><label for="dateInput">วันที่ตรวจสภาพ</label><input id="dateInput" value="16 สิงหาคม 2568">
+      </div>
+      <div class="field"><label for="sellerInput">ผู้ขายและเบอร์โทร</label><input id="sellerInput"
+          value="เต็นท์xx 08x-xxx-xxxx" placeholder="เช่น เต็นท์DD 081-234-5678"></div>
+      <div class="field"><label for="plateInput">ทะเบียนรถ</label><input id="plateInput" value="กข1234 เชียงใหม่"
+          placeholder="เช่น กข1234 เชียงใหม่"></div>
+      <div class="field"><label for="vehicleInput">รุ่นรถ</label><input id="vehicleInput" value="2021 Toyota Yaris ATIV"
+          placeholder="เช่น 2021 Toyota Yaris ATIV"></div>
+      <hr class="divider">
+      <div class="field"><label for="reportLinkInput">ลิงก์รายงาน (สร้าง QR Code อัตโนมัติ)</label><input
+          id="reportLinkInput" type="url" inputmode="url" placeholder="เช่น https://autovinth.com/report/xxxx"></div>
+      <div class="field"><label for="qrUpload">หรืออัปโหลดรูป QR Code</label><input id="qrUpload" type="file"
+          accept="image/*"></div>
+      <hr class="divider"><button id="downloadBtn" class="button orange"><i class="fa-solid fa-download"></i> Download
+        Now (ดาวน์โหลดรูป)</button>
+      <p class="note">เลือก ลิ๊งค์รายงาน หรือ รูปภาพ QR Code อย่างใดอย่างหนึ่งเท่านั้น!</p>
+    </aside>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id); let qr;
+    // Keep the QR area intentionally blank until the user uploads a QR image.
+    $('dateInput').addEventListener('input', e => $('dateText').textContent = e.target.value || '—');
+    $('sellerInput').addEventListener('input', e => $('sellerText').textContent = e.target.value || '—');
+    $('plateInput').addEventListener('input', e => $('plateText').textContent = e.target.value.trim() || '—');
+    $('vehicleInput').addEventListener('input', e => $('vehicleText').textContent = e.target.value.trim() || '—');
+    $('qrUpload').addEventListener('change', () => { const f = $('qrUpload').files[0]; if (!f) return; const r = new FileReader(); r.onload = e => { const img = new Image(); img.src = e.target.result; img.alt = 'QR Code'; $('uploadedQr').innerHTML = ''; $('uploadedQr').append(img); $('uploadedQr').hidden = false; $('qrCode').hidden = true }; r.readAsDataURL(f) });
+
+    // Generate a QR code from the report link. Typing a link switches the card
+    // back to the generated QR (and clears any previously uploaded QR image).
+    let qrTimer;
+    function renderReportQr() {
+      const link = $('reportLinkInput').value.trim();
+      if (!link) { if (qr) qr.clear(); $('qrCode').innerHTML = ''; qr = null; return }
+      $('uploadedQr').hidden = true; $('uploadedQr').innerHTML = ''; $('qrUpload').value = '';
+      $('qrCode').hidden = false;
+      if (!qr) {
+        $('qrCode').innerHTML = '';
+        qr = new QRCode($('qrCode'), { text: link, width: 440, height: 440, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+      } else { qr.clear(); qr.makeCode(link) }
+    }
+    $('reportLinkInput').addEventListener('input', () => { clearTimeout(qrTimer); qrTimer = setTimeout(renderReportQr, 250) });
+    $('downloadBtn').addEventListener('click', async () => { const btn = $('downloadBtn'), original = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังสร้างรูปภาพ...'; try { const card = $('guaranteeCard'); const canvas = await html2canvas(card, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: card.offsetWidth, height: card.offsetHeight, onclone: doc => { const s = doc.getElementById('cardShell'); if (s) s.style.transform = 'none' } }); const a = document.createElement('a'); a.download = 'autovinth-guarantee-card.png'; a.href = canvas.toDataURL('image/png'); a.click() } catch (err) { alert('ไม่สามารถสร้างรูปภาพได้ กรุณาลองใหม่อีกครั้ง') } finally { btn.innerHTML = original } });
+
+    // Preview-only scaling: shrink the fixed-size (760px) card to fit narrow screens.
+    // The download above removes this scale in the cloned document, so the image
+    // is always rendered at the full design size regardless of the device.
+    const CARD_W = 760;
+    function fitCard() {
+      const area = $('previewArea'), shell = $('cardShell'), fit = $('cardFit');
+      const cs = getComputedStyle(area);
+      const avail = area.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const s = Math.min(1, avail / CARD_W);
+      shell.style.transform = s < 1 ? `scale(${s})` : 'none';
+      fit.style.width = (CARD_W * s) + 'px';
+      fit.style.height = (shell.offsetHeight * s) + 'px';
+    }
+    window.addEventListener('resize', fitCard);
+    if (window.ResizeObserver) new ResizeObserver(fitCard).observe($('previewArea'));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitCard);
+    fitCard();
+  </script>
+</body>
+
+</html>
