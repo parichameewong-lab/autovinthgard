@@ -690,7 +690,7 @@
     <aside class="panel">
       <h1><i class="fa-solid fa-sliders"></i> ป้อนข้อมูลการ์ด</h1>
       <p>ระบบสร้างใบรับรองการตรวจสภาพ By autovinth.com</p>
-      <div class="field"><label for="dateInput">วันที่ตรวจสภาพ</label><input id="dateInput" value="16 สิงหาคม 2568">
+      <div class="field"><label for="dateInput">วันที่ตรวจสภาพ</label><input id="dateInput" type="date">
       </div>
       <div class="field"><label for="sellerInput">ผู้ขายและเบอร์โทร</label><input id="sellerInput"
           value="เต็นท์xx 08x-xxx-xxxx" placeholder="เช่น เต็นท์DD 081-234-5678"></div>
@@ -711,7 +711,16 @@
   <script>
     const $ = id => document.getElementById(id); let qr;
     // Keep the QR area intentionally blank until the user uploads a QR image.
-    $('dateInput').addEventListener('input', e => $('dateText').textContent = e.target.value || '—');
+    // Date picker (calendar): convert the selected yyyy-mm-dd value to a Thai date
+    // with a Buddhist Era year, e.g. "16 สิงหาคม 2568". Defaults to today.
+    const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+    function formatThaiDate(v) { if (!v) return '—'; const [y, m, d] = v.split('-').map(Number); return `${d} ${THAI_MONTHS[m - 1]} ${y + 543}` }
+    function updateDate() { $('dateText').textContent = formatThaiDate($('dateInput').value) }
+    (() => { const t = new Date(), p = n => String(n).padStart(2, '0'); $('dateInput').value = `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}` })();
+    $('dateInput').addEventListener('input', updateDate);
+    $('dateInput').addEventListener('change', updateDate);
+    $('dateInput').addEventListener('click', e => { try { e.target.showPicker() } catch (_) { } });
+    updateDate();
     $('sellerInput').addEventListener('input', e => $('sellerText').textContent = e.target.value || '—');
     $('plateInput').addEventListener('input', e => $('plateText').textContent = e.target.value.trim() || '—');
     $('vehicleInput').addEventListener('input', e => $('vehicleText').textContent = e.target.value.trim() || '—');
