@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="th">
 
 <head>
@@ -69,7 +69,7 @@
 
     .card {
       width: 100%;
-      aspect-ratio: 3 / 4;
+      aspect-ratio: 5 / 7;
       background: #fff;
       position: relative;
       overflow: hidden;
@@ -153,12 +153,69 @@
     /* Banner image replacing the old CSS badge. Same footprint as the old
        badge: 660 x 178 px visible area (+15px spacing kept below).
        Recommended source image size: 1320 x 356 px (2x for sharp downloads). */
+    /* No object-fit here: html2canvas ignores it and would stretch the image
+       in the downloaded PNG. Fixed height + auto width keeps the real ratio. */
     .cert-img {
       display: block;
-      width: 100%;
+      width: auto;
+      max-width: 100%;
       height: 178px;
-      object-fit: contain;
-      margin-bottom: 15px
+      margin: 0 auto 15px
+    }
+
+    /* Rating row under the banner: gold stars | GUARANTEE badge.
+       Hidden (with the badge) when the score is below 90. */
+    .rating {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin: -6px 0 2px
+    }
+
+    .rating[hidden] {
+      display: none !important
+    }
+
+    .stars {
+      display: flex;
+      gap: 6px;
+      font-size: 34px;
+      line-height: 1;
+      color: #f6b40e;
+      text-shadow: 0 2px 3px rgba(150, 90, 0, .35)
+    }
+
+    .rating-divider {
+      width: 2px;
+      height: 38px;
+      background: var(--navy)
+    }
+
+    .guarantee {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 26px 9px 18px;
+      border-radius: 12px;
+      background: linear-gradient(100deg, var(--navy-dark), var(--navy-light));
+      border-bottom: 3px solid var(--orange);
+      box-shadow: 0 5px 10px #0b112030;
+      color: #fff;
+      font: italic 900 24px/1 Montserrat, sans-serif;
+      letter-spacing: .5px
+    }
+
+    .guarantee i {
+      color: var(--orange-light);
+      font-size: 26px;
+      font-style: normal
+    }
+
+    .grade {
+      margin-left: 6px;
+      font-family: Montserrat, sans-serif;
+      font-weight: 800
     }
 
     .middle {
@@ -566,7 +623,7 @@
         border: 0;
         width: 100%;
         height: auto;
-        aspect-ratio: 3 / 4
+        aspect-ratio: 5 / 7
       }
     }
   </style>
@@ -586,6 +643,11 @@
             </header>
             <section class="cert-wrap">
               <img class="cert-img" src="cert-banner.png" alt="CERTIFIED INSPECTED VEHICLE - มั่นใจ โปร่งใส ตรวจสอบได้ autovinth.com">
+              <div id="rating" class="rating" hidden>
+                <div class="guarantee"><i class="fa-solid fa-shield-halved"></i>GUARANTEE</div>
+                <div class="rating-divider"></div>
+                <div id="stars" class="stars" aria-label="ดาว"></div>
+              </div>
             </section>
             <section class="middle">
               <div class="features-column">
@@ -637,7 +699,7 @@
                     08x-xxx-xxxx</output></div>
               </div>
               <div class="info-item"><i class="fa-solid fa-circle-check" style="color:#20a442"></i>
-                <div><label>รถคันนี้ผ่านการตรวจแล้ว</label><output class="pass">ผ่าน</output></div>
+                <div><label>รถคันนี้ผ่านการตรวจแล้ว</label><output class="pass">ผ่าน<span id="gradeText" class="grade"></span></output></div>
               </div>
             </section>
             <footer class="footer"><b>Autovinth.com</b>แพลตฟอร์มตรวจสภาพรถมือสองมาตรฐานสากลของไทย</footer>
@@ -656,6 +718,8 @@
           placeholder="เช่น กข1234 เชียงใหม่"></div>
       <div class="field"><label for="vehicleInput">รุ่นรถ</label><input id="vehicleInput" value="2021 Toyota Yaris ATIV"
           placeholder="เช่น 2021 Toyota Yaris ATIV"></div>
+      <div class="field"><label for="scoreInput">คะแนน (0–100) → ดาวทอง และเกรด</label><input id="scoreInput" type="number"
+          min="0" max="100" step="1" inputmode="numeric" placeholder="เช่น 95"></div>
       <hr class="divider">
       <div class="field"><label for="reportLinkInput">ลิงก์รายงาน (สร้าง QR Code อัตโนมัติ)</label><input
           id="reportLinkInput" type="url" inputmode="url" placeholder="เช่น https://autovinth.com/report/xxxx"></div>
@@ -682,6 +746,29 @@
     $('sellerInput').addEventListener('input', e => $('sellerText').textContent = e.target.value || '—');
     $('plateInput').addEventListener('input', e => $('plateText').textContent = e.target.value.trim() || '—');
     $('vehicleInput').addEventListener('input', e => $('vehicleText').textContent = e.target.value.trim() || '—');
+
+    // Score -> gold stars + grade.
+    //  97–100: 5 stars, A+ | 90–96: 4 stars (+0.5 if last digit is 5–9), A
+    //  83–89 : no stars, B | below 83: no grade. Stars + GUARANTEE hidden below 90.
+    function scoreToRating(score) {
+      if (score >= 97) return { stars: 5, grade: 'A+' };
+      if (score >= 90) return { stars: 4 + (score % 10 >= 5 ? 0.5 : 0), grade: 'A' };
+      if (score >= 83) return { stars: 0, grade: 'B' };
+      return { stars: 0, grade: '' };
+    }
+    function updateScore() {
+      const raw = $('scoreInput').value.trim();
+      let score = raw === '' ? NaN : Math.round(Number(raw));
+      if (!isNaN(score)) score = Math.max(0, Math.min(100, score));
+      const r = isNaN(score) ? { stars: 0, grade: '' } : scoreToRating(score);
+      const full = Math.floor(r.stars), half = r.stars % 1 !== 0;
+      $('stars').innerHTML = '<i class="fa-solid fa-star"></i>'.repeat(full) + (half ? '<i class="fa-solid fa-star-half"></i>' : '');
+      $('stars').setAttribute('aria-label', r.stars + ' ดาว');
+      $('rating').hidden = r.stars === 0;
+      $('gradeText').textContent = r.grade;
+      fitCard();
+    }
+    $('scoreInput').addEventListener('input', updateScore);
     $('qrUpload').addEventListener('change', () => { const f = $('qrUpload').files[0]; if (!f) return; const r = new FileReader(); r.onload = e => { const img = new Image(); img.src = e.target.result; img.alt = 'QR Code'; $('uploadedQr').innerHTML = ''; $('uploadedQr').append(img); $('uploadedQr').hidden = false; $('qrCode').hidden = true }; r.readAsDataURL(f) });
 
     // Generate a QR code from the report link. Typing a link switches the card
@@ -698,7 +785,7 @@
       } else { qr.clear(); qr.makeCode(link) }
     }
     $('reportLinkInput').addEventListener('input', () => { clearTimeout(qrTimer); qrTimer = setTimeout(renderReportQr, 250) });
-    $('downloadBtn').addEventListener('click', async () => { const btn = $('downloadBtn'), original = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังสร้างรูปภาพ...'; try { const card = $('guaranteeCard'); const canvas = await html2canvas(card, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: card.offsetWidth, height: card.offsetHeight, onclone: doc => { const s = doc.getElementById('cardShell'); if (s) s.style.transform = 'none' } }); const a = document.createElement('a'); a.download = 'autovinth-guarantee-card.png'; a.href = canvas.toDataURL('image/png'); a.click() } catch (err) { alert('ไม่สามารถสร้างรูปภาพได้ กรุณาลองใหม่อีกครั้ง') } finally { btn.innerHTML = original } });
+    $('downloadBtn').addEventListener('click', async () => { const btn = $('downloadBtn'), original = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังสร้างรูปภาพ...'; try { const card = $('guaranteeCard'); const canvas = await html2canvas(card, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: card.offsetWidth, height: card.offsetHeight, onclone: doc => { const s = doc.getElementById('cardShell'); if (s) s.style.transform = 'none'; const src = $('uploadedQr').querySelector('img'), dst = doc.querySelector('#uploadedQr img'); if (src && dst && src.naturalWidth) { const box = $('uploadedQr'), r = Math.min(box.clientWidth / src.naturalWidth, box.clientHeight / src.naturalHeight); dst.style.setProperty('width', (src.naturalWidth * r) + 'px', 'important'); dst.style.setProperty('height', (src.naturalHeight * r) + 'px', 'important') } } }); const a = document.createElement('a'); a.download = 'autovinth-guarantee-card.png'; a.href = canvas.toDataURL('image/png'); a.click() } catch (err) { alert('ไม่สามารถสร้างรูปภาพได้ กรุณาลองใหม่อีกครั้ง') } finally { btn.innerHTML = original } });
 
     // Preview-only scaling: shrink the fixed-size (760px) card to fit narrow screens.
     // The download above removes this scale in the cloned document, so the image
