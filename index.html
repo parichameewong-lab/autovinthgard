@@ -259,6 +259,10 @@
       background: white
     }
 
+    .feature > div:last-child {
+      min-width: 0
+    }
+
     .feature strong {
       display: block;
       color: var(--navy);
@@ -270,6 +274,21 @@
       display: block;
       font-size: 12px;
       color: #4b5670;
+      margin-top: 2px
+    }
+
+    .features.is-detailed .feature {
+      padding: 5.5px 0
+    }
+
+    .features.is-detailed .feature strong {
+      font-size: 14.5px;
+      line-height: 1.18
+    }
+
+    .features.is-detailed .feature span {
+      font-size: 10.8px;
+      line-height: 1.28;
       margin-top: 2px
     }
 
@@ -651,7 +670,7 @@
             </section>
             <section class="middle">
               <div class="features-column">
-                <div class="features">
+                <div id="featuresList" class="features">
                   <div class="feature">
                     <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
                     <div><strong>ตรวจสภาพกว่า 200 จุด</strong><span>ครอบคลุมทุกระบบสำคัญ</span></div>
@@ -718,7 +737,7 @@
           placeholder="เช่น กข1234 เชียงใหม่"></div>
       <div class="field"><label for="vehicleInput">รุ่นรถ</label><input id="vehicleInput" value="2021 Toyota Yaris ATIV"
           placeholder="เช่น 2021 Toyota Yaris ATIV"></div>
-      <div class="field"><label for="scoreInput">คะแนน (0–100) → ดาวทอง และเกรด</label><input id="scoreInput" type="number"
+      <div class="field"><label for="scoreInput">คะแนน (0–100) → ดาวทอง เกรด และหัวข้อตรวจสภาพ</label><input id="scoreInput" type="number"
           min="0" max="100" step="1" inputmode="numeric" placeholder="เช่น 95"></div>
       <hr class="divider">
       <div class="field"><label for="reportLinkInput">ลิงก์รายงาน (สร้าง QR Code อัตโนมัติ)</label><input
@@ -747,7 +766,56 @@
     $('plateInput').addEventListener('input', e => $('plateText').textContent = e.target.value.trim() || '—');
     $('vehicleInput').addEventListener('input', e => $('vehicleText').textContent = e.target.value.trim() || '—');
 
-    // Score -> gold stars + grade.
+    // Feature list by score tier:
+    //  empty  : default general copy
+    //  >= 85  : high score (condition verified)
+    //  70–84  : mid score (safe structure, normal wear)
+    //  < 70   : low score (minimum structure, repairs noted)
+    const DEFAULT_FEATURES = [
+      { icon: 'fa-solid fa-shield-halved', title: 'ตรวจสภาพกว่า 200 จุด', desc: 'ครอบคลุมทุกระบบสำคัญ' },
+      { icon: 'fa-solid fa-camera', title: 'มีภาพถ่ายประกอบ', desc: 'ตรวจสอบได้ทุกจุด' },
+      { icon: 'fa-regular fa-file-lines', title: 'รายงานละเอียด', desc: 'ชัดเจน โปร่งใส ตรวจสอบได้' },
+      { icon: 'fa-solid fa-user-gear', title: 'โดยช่างผู้เชี่ยวชาญ', desc: 'ประสบการณ์สูง' },
+      { icon: 'fa-solid fa-award', title: 'มาตรฐานระดับสากล', desc: 'เชื่อถือได้ 100%' }
+    ];
+    const HIGH_SCORE_FEATURES = [
+      { icon: 'fa-solid fa-shield-halved', title: 'โครงสร้างเดิม 100%', desc: 'ไม่มีชนหนัก ไม่ตัดต่อตัวถัง คานและเสาเดิมโรงงาน' },
+      { icon: 'fa-solid fa-water', title: 'ปลอดภัย ไม่ผ่านน้ำท่วม', desc: 'ใต้พรม ขาเบาะ ห้องเครื่อง ปลอดสนิมน้ำท่วมขัง' },
+      { icon: 'fa-regular fa-file-lines', title: 'เลขเครื่อง-คัสซีตรงเล่ม', desc: 'ตรวจสอบเพลทและเลขตัวถังแท้ โอนกรรมสิทธิ์ได้ 100%' },
+      { icon: 'fa-solid fa-laptop-code', title: 'สแกนกล่อง ECU/OBD2 ผ่าน', desc: 'ระบบเครื่องยนต์ เกียร์ และระบบไฟฟ้า ไร้โค้ดข้อผิดพลาด' },
+      { icon: 'fa-solid fa-gears', title: 'เครื่อง เกียร์ ช่วงล่าง พร้อมใช้', desc: 'ค่าวัดสีสม่ำเสมอ แบตเตอรี่และระบบเบรกทำงานสมบูรณ์' }
+    ];
+    const MID_SCORE_FEATURES = [
+      { icon: 'fa-solid fa-shield-halved', title: 'โครงสร้างหลักปลอดภัย', desc: 'คานหน้า-หลัง แชสซี เสา A/B/C สมบูรณ์ ไร้อุบัติเหตุหนัก' },
+      { icon: 'fa-solid fa-water', title: 'ปลอดภัย ไม่ผ่านน้ำท่วม', desc: 'ตรวจสอบจุดซ่อนเร้น ไร้ร่องรอยคราบโคลนหรือน้ำขัง' },
+      { icon: 'fa-regular fa-file-lines', title: 'เลขเครื่อง-คัสซีตรงเล่ม', desc: 'แผ่นเพลทและเลขตัวถังสมบูรณ์ โอนกรรมสิทธิ์ได้ถูกต้อง' },
+      { icon: 'fa-solid fa-laptop-code', title: 'สแกนกล่อง ECU/OBD2 ผ่าน', desc: 'อ่านค่า Live Data สมบูรณ์ ไม่มีไฟเตือนระบบความปลอดภัย' },
+      { icon: 'fa-solid fa-palette', title: 'มีริ้วรอย/ทำสีตามอายุ', desc: 'มีทำสีเก็บรอยรอบคัน อะไหล่สิ้นเปลืองเฝ้าระวังตามระยะ' }
+    ];
+    const LOW_SCORE_FEATURES = [
+      { icon: 'fa-solid fa-shield-halved', title: 'ผ่านเกณฑ์โครงสร้างขั้นต่ำ', desc: 'ตรวจสอบจุดยึดแชสซี ไม่ส่งผลกระทบต่อความปลอดภัย' },
+      { icon: 'fa-solid fa-water', title: 'ตรวจสอบประวัติน้ำท่วม', desc: 'ระบุผลตรวจตามจริงในระบบรายงานดิจิทัล' },
+      { icon: 'fa-regular fa-file-lines', title: 'เลขเครื่อง-คัสซีตรงเล่ม', desc: 'ตรวจสอบความถูกต้องของเลขประจำตัวรถ' },
+      { icon: 'fa-solid fa-laptop-code', title: 'ผลวินิจฉัยระบบ OBD2', desc: 'มีบันทึกรายละเอียดโค้ดและระบบที่ต้องซ่อมบำรุง' },
+      { icon: 'fa-solid fa-wrench', title: 'มีชิ้นงานต้องซ่อมแซม', desc: 'มีประวัติซ่อมเคาะทำสี แนะนำตรวจดูใบเสนอราคาซ่อม' }
+    ];
+    function renderFeatures(score) {
+      const list = $('featuresList');
+      const hasScore = !isNaN(score);
+      const items = !hasScore
+        ? DEFAULT_FEATURES
+        : score >= 85
+          ? HIGH_SCORE_FEATURES
+          : score >= 70
+            ? MID_SCORE_FEATURES
+            : LOW_SCORE_FEATURES;
+      list.classList.toggle('is-detailed', hasScore);
+      list.innerHTML = items.map(item =>
+        `<div class="feature"><div class="feature-icon"><i class="${item.icon}"></i></div><div><strong>${item.title}</strong><span>${item.desc}</span></div></div>`
+      ).join('');
+    }
+
+    // Score -> gold stars + grade + feature highlights by tier.
     //  97–100: 5 stars, A+ | 90–96: 4 stars (+0.5 if last digit is 5–9), A
     //  83–89 : no stars, B | below 83: no grade. Stars + GUARANTEE hidden below 90.
     function scoreToRating(score) {
@@ -766,9 +834,12 @@
       $('stars').setAttribute('aria-label', r.stars + ' ดาว');
       $('rating').hidden = r.stars === 0;
       $('gradeText').textContent = r.grade;
+      renderFeatures(score);
       fitCard();
     }
     $('scoreInput').addEventListener('input', updateScore);
+    $('scoreInput').addEventListener('change', updateScore);
+    updateScore();
     $('qrUpload').addEventListener('change', () => { const f = $('qrUpload').files[0]; if (!f) return; const r = new FileReader(); r.onload = e => { const img = new Image(); img.src = e.target.result; img.alt = 'QR Code'; $('uploadedQr').innerHTML = ''; $('uploadedQr').append(img); $('uploadedQr').hidden = false; $('qrCode').hidden = true }; r.readAsDataURL(f) });
 
     // Generate a QR code from the report link. Typing a link switches the card
